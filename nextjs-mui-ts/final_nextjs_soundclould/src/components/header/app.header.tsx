@@ -21,6 +21,7 @@ import Avatar from '@mui/material/Avatar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from "next-auth/react"
+import { fetchDelfaultImage } from '@/utils/api';
 
 
 const Search = styled('div')(({ theme }) => ({
@@ -72,13 +73,10 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 
 
-
-
-
 export default function AppHeader() {
 
     const { data: session } = useSession()
-    console.log("check sesion", session)
+    // console.log("check sesion", session)
     const router = useRouter();
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -125,12 +123,12 @@ export default function AppHeader() {
             }}
         >
             <MenuItem onClick={handleMenuClose}>
-                <Link href={"/profile"}>Profile</Link>
-                </MenuItem>
+                <Link href={`/profile/${session?.user?._id}`}>Profile</Link>
+            </MenuItem>
             <MenuItem onClick={() => {
                 handleMenuClose();
                 signOut();
-                }}>Logout</MenuItem>
+            }}>Logout</MenuItem>
         </Menu>
     );
 
@@ -242,20 +240,28 @@ export default function AppHeader() {
                         }}>
 
                             {/* thẻ Link là điều hướng trực tiếp mà không cần có xử lý tính toán logic */}
-                            {   session ?
+                            {session ?
                                 <>
-                                    <Link href={"/playlist"} style={{ color: "unset", }}>PlayLists</Link>
-                                    <Link href={"/like"}>Likes</Link>
-                                    <Link href={"/upload"}>Upload</Link>
-                                    <Avatar
+                                    <Link href={"http://localhost:3000/track/playlist"} style={{ color: "unset", }}>PlayLists</Link>
+                                    <Link href={"http://localhost:3000/track/like"}>Likes</Link>
+                                    <Link href={"http://localhost:3000/track/upload"}>Upload</Link>
+                                    <img
+                                        src={`${fetchDelfaultImage(session.user.type)}`}
+                                        alt=""
                                         onClick={handleProfileMenuOpen}
-                                    >ER</Avatar>
+                                        style={{
+                                            width: '50px',
+                                            height: '50px',
+                                        }}
+                                    />
+
+
                                 </>
                                 :
-                                <><Link href={"#"} onClick={() => signIn()}>Login</Link></>
+                                <><Link href={"http://localhost:3000/auth/signin"}>Login</Link></>
                             }
-
                         </Box>
+
                         <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
                             <IconButton
                                 size="large"
@@ -268,6 +274,7 @@ export default function AppHeader() {
                                 <MoreIcon />
                             </IconButton>
                         </Box>
+
                     </Toolbar>
                 </Container>
             </AppBar>

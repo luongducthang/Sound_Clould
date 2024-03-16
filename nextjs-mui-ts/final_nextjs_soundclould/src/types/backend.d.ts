@@ -12,6 +12,7 @@ declare global {
         "trackUrl": string,
         "countLike": number,
         "countPlay": number,
+
         "uploader": {
             "_id": string,
             "email": string,
@@ -22,33 +23,63 @@ declare global {
         "isDeleted": boolean,
         "createdAt": string,
         "updatedAt": string
-}
+    }
 
-interface IRequest {
-    url: string;
-    method: string;
-    body?: { [key: string]: any };
-    queryParams?: any;
-    useCredentials?: boolean;
-    headers?: any;
-    nextOption?: any;
-}
+    interface ITrackComment {
+        result: {
+            _id: string,
+            content: string
+            createdAt: string
+            isDeleted: false
+            moment: number
+            track: string
+            updatedAt: string
 
-interface IBackendRes<T> {
-    error?: string | string[];
-    message: string;
-    statusCode: number | string;
-    data?: T;  //  đây là kiểu genneric lồng generic là (dùng khi không biết kiểu data nó trả về giữ liệu gì)
-}
+            user: {
+                email: string
+                name: string
+                role: string
+                type: string
+                _id: string
+            }
+        }
+    }
 
-interface IModelPaginate<T> {
-    meta: {
-        current: number;
-        pageSize: number;
-        pages: number;
-        total: number;
-    },
-    result: T[]
-}
+
+    interface IRequest {
+        url: string;
+        method: string;
+        body?: { [key: string]: any };
+        queryParams?: any;
+        useCredentials?: boolean;
+        headers?: any;
+        nextOption?: any;
+    }
+
+    interface IBackendRes<T> {
+        error?: string | string[];
+        message: string;
+        statusCode: number | string;
+        data?: T;  //  đây là kiểu genneric lồng generic là (dùng khi không biết kiểu data nó trả về giữ liệu gì)
+    }
+
+    interface IModelPaginate<T> {
+        meta: {
+            current: number;
+            pageSize: number;
+            pages: number;
+            total: number;
+        },
+        result: T[]
+    }
+
+    interface IShareTrack extends ITrackTop {
+        isPlaying: boolean,
+    }
+
+    interface ITrackContext {
+        currentTrack: IShareTrack,
+        setCurrentTrack: (v: IShareTrack) => void,
+    }
 
 }

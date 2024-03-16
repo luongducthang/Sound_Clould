@@ -1,29 +1,37 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import WaveSurfer from "wavesurfer.js";
 import { WaveSurferOptions } from "wavesurfer.js";
 import { useSearchParams } from 'next/navigation';
 import { useWavesurfer } from "@/utils/customHook";
 import './wave.scss';
-import { Brightness1, Pause, PauseCircle, PauseCircleFilledOutlined, PauseCircleRounded, PlayArrow, PlayArrowTwoTone } from "@mui/icons-material";
-import { Play } from "next/font/google";
+import { Pause, PlayArrow } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
+import { fetchDelfaultImage, sendRequest } from "@/utils/api";
+import { useTrackContext } from "@/lib/track.wrapper";
+import CommentTrack from "./comment.track";
 
 
 
-const WaveTrack = () => {
+interface IProps {
+    track: ITrackTop | null;
+    comment: ITrackComment | null;
+}
+
+const WaveTrack = (props: IProps) => {
+    const { track, comment } = props;
+
+    const { currentTrack, setCurrentTrack } = useTrackContext() as ITrackContext;
+    console.log(comment)
+
     const searchParams = useSearchParams()
     const fileName = searchParams.get('audio');
+
     const containerRef = useRef<HTMLDivElement>(null);
     const hoverRef = useRef<HTMLDivElement>(null);
 
     const [time, setTime] = useState<string>("0:00")
     const [duration, setDuration] = useState<string>("0:00")
-
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')!
-
 
 
 
@@ -31,6 +39,8 @@ const WaveTrack = () => {
     const optionsMemo = useMemo((): Omit<WaveSurferOptions, 'container'> => {
         let gradient, progressGradient;
         if (typeof window !== "undefined") {
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')!
 
             // Define the waveform gradient
             gradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 2)!
@@ -71,14 +81,16 @@ const WaveTrack = () => {
 
 
 
+
     //  phần click để đổi chữ của button
     const wavesurfer = useWavesurfer(containerRef, optionsMemo);
-    const [isPlaying, setIsPlaying] = useState(false)
+    const [isPlaying, setIsPlaying] = useState<boolean>(false)
+
 
     useEffect(() => {
-        if (!wavesurfer) {
-            return setIsPlaying(false)
-        }
+        if (!wavesurfer) return;
+        setIsPlaying(false)
+
 
 
 
@@ -102,7 +114,7 @@ const WaveTrack = () => {
         return () => {
             subscriptions.forEach((unsub) => unsub())
         }
-    })
+    }, [wavesurfer])
 
 
     //  On play button click
@@ -115,7 +127,6 @@ const WaveTrack = () => {
 
 
 
-
     // Current time & duration
 
     const formatTime = (seconds: number) => {
@@ -125,57 +136,85 @@ const WaveTrack = () => {
         return `${minutes}:${paddedSeconds}`
     }
 
-    const arrComments = [
-        {
-            id: 1,
-            avatar: "http://localhost:8000/images/chill1.png",
-            moment: 10,
-            user: "username 1",
-            content: "just a comment1"
-        },
-        {
-            id: 2,
-            avatar: "http://localhost:8000/images/chill1.png",
-            moment: 30,
-            user: "username 2",
-            content: "just a comment3"
-        },
-        {
-            id: 3,
-            avatar: "http://localhost:8000/images/chill1.png",
-            moment: 50,
-            user: "username 3",
-            content: "just a comment3"
-        },
-    ]
+
 
     const calLeft = (moment: number) => {
-        const hardCodeDuration = 199;
+        const hardCodeDuration = wavesurfer?.getDuration() ?? 0;  // getDuration() là thời gian của cả bài track
         const percent = (moment / hardCodeDuration) * 100;
         return `${percent}%`
     }
 
+
+
+
+    useEffect(() => {
+        if (track) {
+            setCurrentTrack({ ...currentTrack, isPlaying: false })
+        }
+    }, [track])
+
+
+
+
+    // logic để làm cho khi play cái wavesurfer thì đưới footer phải dừng và ngược lại (để lúc nào cũng chỉ trông tình trạng phát 1 bài)
+
+    useEffect(() => {
+        if (wavesurfer && currentTrack.isPlaying) { // nếu như currentTrack.isPlaying là true tức là bài hát dưới footer đang play thì nút play trên wavesurfer phải dừng 
+            wavesurfer?.pause();
+        }
+    }, [currentTrack])  //  dùng useEffect để quan sát sự thay đổi của một biến số 
+
+
+    useEffect(() => {
+        if (track?._id && !currentTrack._id) {  // nếu như chi vao chi tiết bài nhạc mà chưa click play thì currentTrack chư có dữ liệu thì  cho tạm dừng tất cả không cho chạy 
+            setCurrentTrack({ ...track, isPlaying: false })
+        }
+    }, [track])  //  dùng useEffect để quan sát sự thay đổi của một biến số 
+
+    // useEffect(() => {
+    //     if (track?._id !== currentTrack._id) {  // nếu như chi vao chi tiết bài nhạc mà chưa click play thì currentTrack chư có dữ liệu thì  cho tạm dừng tất cả không cho chạy 
+    //         setCurrentTrack({ ...track, isPlaying: false })
+    //     }
+    // }, [currentTrack])  //  dùng useEffect để quan sát sự thay đổi của một biến số 
+
+
+
     return (
-        <div className="box-track">
+        <div className="box-track" >
 
             <div className="title-img">
 
-                <div className="header-leff">
+                <div className="header-leff" >
                     <div className="info">
-                        <h1 className="name-track back-color">Yop Song's</h1>
-                        <span className="name-singer back-color">Thắng</span>
+                        <h1 className="name-track back-color">{track?.title}</h1>
+                        <span className="name-singer back-color">{track?.description}</span>
                     </div>
+
                     <div className="button-play">
-                        <button className="play" onClick={() => onPlayClick()}>
+                        <button className="play" onClick={() => {
+                            onPlayClick();
+                            if (track && wavesurfer) {          //  làm nhầm nhưng viết ra để khi nào cần thì xem : cho thêm wavesurfer.isPlaying() là để bên  app.footer giá trị current sẽ được set ăn theo Component Wavesurfer
+                                // setCurrentTrack({ ...track, isPlaying: !wavesurfer.isPlaying() });
+                                setCurrentTrack({ ...track, isPlaying: false });
+                            }
+                        }}>
                             {isPlaying ? <Pause sx={{ color: 'white', fontSize: '50px', }} /> : <PlayArrow sx={{ color: 'white', fontSize: '50px', }} />}
                         </button>
                     </div>
                 </div>
                 <div className="header-right">
-                    <img src="" alt="" className="img-singer" />
+                    <img
+                        style={{
+                            maxWidth: "100%",
+                            maxHeight: "200px"
+                        }}
+                        src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/images/${track?.imgUrl}`}
+                        alt="" className="img-singer"
+                    />
                 </div>
 
             </div>
+
 
 
 
@@ -185,10 +224,13 @@ const WaveTrack = () => {
                 <div ref={hoverRef} className="hover-wave"></div>
                 <div className="overlay"></div>
                 <div className="comments">
+
                     {
-                        arrComments.map(item => {
+                        comment?.map((item: any) => {
+                            // console.log(item)
+
                             return (
-                                <Tooltip title={item.content} arrow>
+                                <Tooltip title={item.content} arrow key={item.id}>
                                     <img
                                         onPointerMove={(e) => {
                                             const hover = hoverRef.current!;
@@ -196,21 +238,32 @@ const WaveTrack = () => {
                                         }}
                                         key={item.id}
                                         style={{
-                                            height: '20px',
-                                            width: '20px',
-                                            position: "relative",
-                                            top: 97,
-                                            zIndex: 30,
+                                            height: 20, width: 20,
+                                            position: "absolute",
+                                            top: 71,
+                                            zIndex: 20,
                                             left: calLeft(item.moment)
                                         }}
-                                        src={`http://localhost:8000/images/chill1.png`} alt="" />
+                                        src={fetchDelfaultImage(item?.user?.type)}
+                                        alt="" />
                                 </Tooltip>
                             )
                         })
+
+
+
                     }
 
-
                 </div>
+            </div>
+
+
+            <div>
+                <CommentTrack
+                    comment={comment}
+                    track={track}
+                    wavesurfer={wavesurfer}
+                />
             </div>
 
         </div>

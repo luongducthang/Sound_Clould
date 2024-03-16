@@ -1,8 +1,9 @@
 
-import AppFooter from '@/components/footer/app.footer';
-import AppHeader from '@/components/header/app.header';
+
 import ThemeRegistry from '@/components/theme-registry/theme.registry';
+import { ToastProvider } from '@/utils/toast';
 import NextAuthWrapper from '@/lib/next.auth.wrapper';
+import { TrackContextProvider } from '@/lib/track.wrapper';
 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -11,10 +12,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeRegistry>
           <NextAuthWrapper>
-            <AppHeader />
-            {/* children là file page bên tron forder app */}
-            {children}
-            <AppFooter />
+            <ToastProvider>
+              <TrackContextProvider>
+                {/* children là các file layout bên trong cac foder */}
+                {children}
+              </TrackContextProvider>
+            </ToastProvider>
           </NextAuthWrapper>
         </ThemeRegistry>
       </body>
